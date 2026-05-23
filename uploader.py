@@ -1,0 +1,44 @@
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from pathlib import Path
+
+SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
+
+def get_youtube_service(credentials_file="credentials.json", token_file="token.json"):
+    creds = None
+    token_path = Path(token_file)
+    if token_path.exists():
+        creds = Credentials.from_authorized_user_file(str(token_path), SCOPES)
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(credentials_file, SCOPES)
+            creds = flow.run_local_server(port=0)
+        token_path.write_text(creds.to_json())
+    return build("youtube", "v3", credentials=creds)
+
+def upload_short(youtube, video_path, title, description, tags, made_for_kids=True):
+    request = youtube.videos().insert(
+        part="snippet,status",
+        body={
+            "snippet": {
+                "title": f"{title} #Shorts",
+                "description": f"{description}\n\n#DiviJoyToons #KidsRhymes #Shorts",
+                "tags": tags + ["Shorts", "DiviJoyToons", "KidsRhymes"],
+                "categoryId": "27",
+            },
+            "status": {
+                "privacyStatus": "public",
+                "selfDeclaredMadeForKids": made_for_kids,
+            },
+        },
+        media_body=MediaFileUpload(video_path, resumable=True),
+    )
+    response = request.execute()
+    video_id = response.get("id", "")
+    print(f"Uploaded: https://youtube.com/watch?v={video_id}")
+    return video_id
