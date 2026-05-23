@@ -11,3 +11,4 @@ requests
 Pillow
 python-dotenv
 numpy
+PyJWT
