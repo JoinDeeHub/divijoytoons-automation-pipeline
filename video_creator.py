@@ -1,23 +1,21 @@
-from moviepy import ColorClip, TextClip, CompositeVideoClip, AudioFileClip, ImageClip
+from moviepy import ImageClip, TextClip, CompositeVideoClip, AudioFileClip
 from pathlib import Path
 from PIL import Image, ImageDraw
 import numpy as np
 import subprocess
 
 BG_THEMES = [
-    {"bg": (255, 240, 130), "accent": (255, 100, 80), "text": "#333333"},
-    {"bg": (150, 220, 255), "accent": (30, 120, 255),  "text": "#111111"},
-    {"bg": (255, 200, 210), "accent": (220, 60, 120),  "text": "#222222"},
-    {"bg": (180, 255, 200), "accent": (30, 160, 80),   "text": "#111111"},
-    {"bg": (230, 200, 255), "accent": (120, 50, 200),  "text": "#222222"},
-    {"bg": (255, 220, 160), "accent": (200, 100, 20),  "text": "#222222"},
+    {"bg": (255, 240, 130), "accent": (220, 80, 50),  "text": "#222222"},
+    {"bg": (150, 220, 255), "accent": (20, 100, 220), "text": "#111111"},
+    {"bg": (255, 200, 210), "accent": (200, 50, 110), "text": "#222222"},
+    {"bg": (180, 255, 200), "accent": (20, 140, 70),  "text": "#111111"},
+    {"bg": (230, 200, 255), "accent": (110, 40, 190), "text": "#222222"},
+    {"bg": (255, 220, 160), "accent": (190, 90, 10),  "text": "#222222"},
 ]
 
 def get_available_font():
-    candidates = [
-        "DejaVuSans-Bold", "DejaVuSans", "FreeSansBold",
-        "FreeSans", "LiberationSans-Bold", "LiberationSans",
-    ]
+    candidates = ["DejaVuSans-Bold", "DejaVuSans", "FreeSansBold", "FreeSans",
+                  "LiberationSans-Bold", "LiberationSans"]
     try:
         result = subprocess.run(["fc-list", "--format=%{file}\n"],
                                 capture_output=True, text=True)
@@ -30,30 +28,27 @@ def get_available_font():
     return None
 
 def make_colorful_background(width, height, theme, duration):
-    """Create a colorful gradient-style background with decorative circles."""
     img = Image.new("RGB", (width, height), theme["bg"])
     draw = ImageDraw.Draw(img)
-    # Decorative circles for a fun kids look
     circles = [
-        (100, 100, 180, theme["accent"]),
-        (900, 200, 120, theme["accent"]),
-        (200, 1700, 200, theme["accent"]),
-        (850, 1800, 150, theme["accent"]),
-        (540, 960, 300, tuple(min(255, c + 60) for c in theme["bg"])),
+        (100, 150, 160), (950, 250, 120), (200, 1700, 180),
+        (880, 1780, 150), (540, 960, 260),
     ]
-    for cx, cy, r, color in circles:
-        draw.ellipse([cx - r, cy - r, cx + r, cy + r],
-                     fill=color + (60,) if len(color) == 3 else color)
+    for cx, cy, r in circles:
+        color = theme["accent"]
+        draw.ellipse([cx-r, cy-r, cx+r, cy+r], fill=color + (0,) if False else color)
     # Stars
-    for pos in [(80, 400), (950, 600), (100, 1200), (950, 1400)]:
-        x, y = pos
-        draw.polygon([
-            (x, y - 30), (x + 10, y - 10), (x + 30, y),
-            (x + 10, y + 10), (x, y + 30), (x - 10, y + 10),
-            (x - 30, y), (x - 10, y - 10)
-        ], fill=theme["accent"])
+    for x, y in [(80, 450), (950, 650), (100, 1250), (950, 1450)]:
+        pts = [(x, y-28),(x+9,y-9),(x+28,y),(x+9,y+9),
+               (x,y+28),(x-9,y+9),(x-28,y),(x-9,y-9)]
+        draw.polygon(pts, fill=theme["accent"])
     arr = np.array(img)
-    return ColorClip(arr, duration=duration)
+    return ImageClip(arr, duration=duration)
+
+def make_banner(width, height, color, duration, y_pos):
+    img = Image.new("RGB", (width, height), color)
+    arr = np.array(img)
+    return ImageClip(arr, duration=duration).with_position((0, y_pos))
 
 def make_text_clip(text, font_size, color, font, duration, size, position):
     kwargs = dict(text=text, font_size=font_size, color=color,
@@ -70,38 +65,23 @@ def create_short_video(title, lyrics, audio_path, output_path, color_index=0):
     font = get_available_font()
     print(f"Using font: {font or 'default'}, Theme: {color_index}")
 
-    bg = make_colorful_background(1080, 1920, theme, duration)
+    bg        = make_colorful_background(1080, 1920, theme, duration)
+    top_bar   = make_banner(1080, 170, theme["accent"], duration, 0)
+    bot_bar   = make_banner(1080, 120, theme["accent"], duration, 1800)
 
-    # Top banner
-    banner = ColorClip(size=(1080, 160), color=theme["accent"], duration=duration)\
-        .with_position((0, 0))
-
-    title_clip = make_text_clip(
-        f"DiviJoyToons", 55, "white", font, duration, (1000, None), ("center", 40)
-    )
-    song_title = make_text_clip(
-        title[:45], 68, theme["accent"], font, duration, (980, None), ("center", 220)
-    )
-    lyric_clip = make_text_clip(
-        lyrics[:180], 54, theme["text"], font, duration, (900, None), ("center", 800)
-    )
-    # Bottom branding bar
-    bottom = ColorClip(size=(1080, 120), color=theme["accent"], duration=duration)\
-        .with_position((0, 1800))
-    watermark = make_text_clip(
-        "@DiviJoyToons | Kids Rhymes", 40, "white", font, duration, (900, None), ("center", 1830)
-    )
+    brand     = make_text_clip("DiviJoyToons", 58, "white", font, duration, (1000, None), ("center", 45))
+    song_title= make_text_clip(title[:45], 66, theme["accent"], font, duration, (980, None), ("center", 230))
+    lyric_clip= make_text_clip(lyrics[:200], 52, theme["text"], font, duration, (900, None), ("center", 820))
+    watermark = make_text_clip("@DiviJoyToons | Kids Rhymes", 38, "white", font, duration, (900, None), ("center", 1832))
 
     video = CompositeVideoClip(
-        [bg, banner, title_clip, song_title, lyric_clip, bottom, watermark],
+        [bg, top_bar, brand, song_title, lyric_clip, bot_bar, watermark],
         size=(1080, 1920)
     )
     audio = AudioFileClip(audio_path)
     audio = audio.subclipped(0, min(duration, audio.duration))
     final = video.with_audio(audio)
-    final.write_videofile(
-        str(output_path), fps=24, codec="libx264",
-        audio_codec="aac", logger=None
-    )
+    final.write_videofile(str(output_path), fps=24, codec="libx264",
+                          audio_codec="aac", logger=None)
     print(f"Video saved: {output_path}")
     return str(output_path)

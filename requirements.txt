@@ -3,9 +3,11 @@ google-auth-oauthlib
 google-auth-httplib2
 google-auth
 google-genai
-gtts
+edge-tts
+deep-translator
 moviepy
 schedule
 requests
 Pillow
 python-dotenv
+numpy
