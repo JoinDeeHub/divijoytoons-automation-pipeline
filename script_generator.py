@@ -1,8 +1,8 @@
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 def generate_kids_script(gemini_api_key, topic, language="English"):
-    genai.configure(api_key=gemini_api_key)
-    model = genai.GenerativeModel("gemini-1.5-flash")
+    client = genai.Client(api_key=gemini_api_key)
     prompt = f"""Create a 20-30 second kids educational nursery rhyme for YouTube Shorts.
 Topic: {topic}
 Language: {language}
@@ -13,7 +13,10 @@ TITLE: [catchy title]
 LYRICS: [rhyme lyrics]
 SCENE: [simple animation description]
 TAGS: [5 comma separated tags]"""
-    response = model.generate_content(prompt)
+    response = client.models.generate_content(
+        model="gemini-2.0-flash",
+        contents=prompt,
+    )
     text = response.text
     result = {}
     for line in text.split("\n"):

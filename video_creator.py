@@ -1,4 +1,4 @@
-from moviepy.editor import ColorClip, TextClip, CompositeVideoClip, AudioFileClip
+from moviepy import ColorClip, TextClip, CompositeVideoClip, AudioFileClip
 from pathlib import Path
 
 BG_COLORS = [
@@ -15,27 +15,35 @@ def create_short_video(title, lyrics, audio_path, output_path, color_index=0):
     duration = 20
     bg = ColorClip(size=(1080, 1920), color=bg_color, duration=duration)
     title_clip = (
-        TextClip(title, fontsize=70, color="white", font="DejaVu-Sans-Bold",
-                 method="caption", size=(1000, None))
-        .set_position(("center", 150))
-        .set_duration(duration)
+        TextClip(
+            text=title, font_size=70, color="white", font="DejaVu-Sans-Bold",
+            method="caption", size=(1000, None)
+        )
+        .with_position(("center", 150))
+        .with_duration(duration)
     )
     lyric_clip = (
-        TextClip(lyrics, fontsize=52, color="#222222", font="DejaVu-Sans",
-                 method="caption", size=(900, None))
-        .set_position(("center", 700))
-        .set_duration(duration)
+        TextClip(
+            text=lyrics, font_size=52, color="#222222", font="DejaVu-Sans",
+            method="caption", size=(900, None)
+        )
+        .with_position(("center", 700))
+        .with_duration(duration)
     )
     watermark = (
-        TextClip("DiviJoyToons", fontsize=38, color="white", font="DejaVu-Sans-Bold")
-        .set_position(("center", 1820))
-        .set_duration(duration)
+        TextClip(
+            text="DiviJoyToons", font_size=38, color="white", font="DejaVu-Sans-Bold"
+        )
+        .with_position(("center", 1820))
+        .with_duration(duration)
     )
     video = CompositeVideoClip([bg, title_clip, lyric_clip, watermark], size=(1080, 1920))
     audio = AudioFileClip(audio_path)
-    audio = audio.subclip(0, min(duration, audio.duration))
-    final = video.set_audio(audio)
-    final.write_videofile(str(output_path), fps=24, codec="libx264", audio_codec="aac",
-                          verbose=False, logger=None)
+    audio = audio.subclipped(0, min(duration, audio.duration))
+    final = video.with_audio(audio)
+    final.write_videofile(
+        str(output_path), fps=24, codec="libx264",
+        audio_codec="aac", logger=None
+    )
     print(f"Video saved: {output_path}")
     return str(output_path)

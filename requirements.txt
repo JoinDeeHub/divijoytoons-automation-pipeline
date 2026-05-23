@@ -1,8 +1,11 @@
 google-api-python-client
 google-auth-oauthlib
 google-auth-httplib2
+google-auth
+google-genai
 gtts
 moviepy
 schedule
 requests
 Pillow
+python-dotenv
